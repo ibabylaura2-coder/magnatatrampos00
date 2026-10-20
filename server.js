@@ -1,4 +1,3 @@
-// 1. Configuração do dotenv (Lê o arquivo local .env OU as variáveis do Railway)
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -9,16 +8,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. Puxando as variáveis (funciona local e no Railway)
 const GLADEPAY_URL = process.env.GATEWAY_BASE_URL || 'https://app.gladepay.com.br/v1';
 const TOKEN = process.env.GATEWAY_API_TOKEN;
+
+// Memória temporária para guardar os pagamentos (enquanto o site está online)
+const pagamentos = {};
 
 // ==========================================
 // CRIAR DEPÓSITO PIX
 // ==========================================
 app.post('/api/transacao', async (req, res) => {
   try {
-    const { amount } = req.body; // Valor em centavos
+    const { amount, customer } = req.body;
 
     if (!amount || amount < 100) {
       return res.status(400).json({ error: 'Valor mínimo é R$ 1,00' });
@@ -33,7 +34,8 @@ app.post('/api/transacao', async (req, res) => {
       body: JSON.stringify({
         amountCents: amount,
         reference: `pedido-${Date.now()}`,
-        callbackUrl: process.env.WEBHOOK_URL || undefined
+        // O webhook é configurado pela variável de ambiente
+        callbackUrl: process.env.WEBHOOK_URL || undefined 
       })
     });
 
@@ -44,7 +46,9 @@ app.post('/api/transacao', async (req, res) => {
       return res.status(response.status).json({ error: data.message || 'Erro na GladePay' });
     }
 
-    // Retorna apenas o que o frontend precisa
+    // Salva como pendente na memória
+    pagamentos[data.txId] = { status: 'pending' };
+
     res.json({
       hash: data.txId,
       pix_qr_code: data.qrcodeText,
@@ -52,48 +56,70 @@ app.post('/api/transacao', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[GLADEPAY] Falha na requisição:', error.message);
+    console.error('[GLADEPAY] Falha:', error.message);
     res.status(500).json({ error: 'Erro de conexão com o gateway.' });
   }
 });
 
 // ==========================================
-// CONSULTAR STATUS
+// CONSULTAR STATUS (Usado pelo botão verificar)
 // ==========================================
 app.get('/api/transacao/:hash', async (req, res) => {
   try {
     const txId = req.params.hash;
     
+    // Se já foi pago via webhook, retorna na hora
+    if (pagamentos[txId] && pagamentos[txId].status === 'paid') {
+      return res.json({ payment_status: 'paid' });
+    }
+
+    // Se não, pergunta pra GladePay
     const response = await fetch(`${GLADEPAY_URL}/deposito/${txId}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${TOKEN}`,
-        'Accept': 'application/json'
-      }
+      headers: { 'Authorization': `Bearer ${TOKEN}`, 'Accept': 'application/json' }
     });
 
     const data = await response.json();
-
     let statusTraduzido = 'pending';
-    if (data.status === 'PAID' || data.status === 'COMPLETED' || data.status === 'APPROVED') {
-      statusTraduzido = 'paid';
-    } else if (data.status === 'EXPIRED' || data.status === 'CANCELED') {
-      statusTraduzido = 'expired';
-    }
+    if (['PAID', 'COMPLETED', 'APPROVED'].includes(data.status)) statusTraduzido = 'paid';
+    if (['EXPIRED', 'CANCELED'].includes(data.status)) statusTraduzido = 'expired';
+
+    // Atualiza a memória se descobriu que foi pago
+    if (statusTraduzido === 'paid') pagamentos[txId] = { status: 'paid' };
 
     res.json({ payment_status: statusTraduzido, original: data });
 
   } catch (error) {
-    console.error('[GLADEPAY] Erro consulta:', error.message);
     res.status(500).json({ error: 'Erro ao verificar status.' });
   }
 });
 
 // ==========================================
-// INICIAR SERVIDOR (Railway usa a PORT dinâmica)
+// WEBHOOK (Recebe o aviso automático da GladePay)
 // ==========================================
+app.post('/webhook', (req, res) => {
+  try {
+    const data = req.body;
+    console.log('[WEBHOOK RECEBIDO]', data);
+
+    // A GladePay avisa o ID da transação e o novo status
+    const txId = data.txId || data.id;
+    const status = data.status;
+
+    if (txId && ['PAID', 'COMPLETED', 'APPROVED'].includes(status)) {
+      pagamentos[txId] = { status: 'paid' };
+      console.log(`✅ PIX ${txId} confirmado via webhook!`);
+    }
+
+    // Sempre responda 200 OK para a GladePay não ficar reenviando
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Erro no webhook:', error);
+    res.status(500).send('Erro');
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ MagnataStore online na porta ${PORT}`);
-  console.log(`🔗 Gateway: ${GLADEPAY_URL}`);
 });
