@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MagnataStore</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="header">
+    <h1>?? MAGNATASTORE</h1>
+    <p>A melhor loja para seus trampos!</p>
+  </div>
+  <div class="carrinho-flutuante" onclick="abrirModalCarrinho()">
+    ?? <span class="carrinho-count" id="carrinhoCount">0</span>
+  </div>
+  <div class="container">
+    <div class="categorias">
+      <button class="categoria-btn ativo" onclick="filtrarCategoria('todos', this)">Todos</button>
+      <button class="categoria-btn" onclick="filtrarCategoria('viradas', this)">?? Viradas</button>
+      <button class="categoria-btn" onclick="filtrarCategoria('cursos', this)">?? Cursos</button>
+      <button class="categoria-btn" onclick="filtrarCategoria('cc', this)">?? CCs</button>
+      <button class="categoria-btn" onclick="filtrarCategoria('consultaveis', this)">?? Consult veis</button>
+    </div>
+    <div class="produtos-grid" id="produtosGrid"></div>
+  </div>
+  <div id="modalProduto" class="modal"><div class="modal-content"><div class="modal-header"><h2 id="modalTitulo"></h2><span class="fechar" onclick="fecharModal('modalProduto')">&times;</span></div><div id="modalConteudo"></div></div></div>
+  <div id="modalCarrinho" class="modal"><div class="modal-content"><div class="modal-header"><h2>?? Meu Carrinho</h2><span class="fechar" onclick="fecharModal('modalCarrinho')">&times;</span></div><div id="carrinhoConteudo"></div></div></div>
+  <div id="modalPagamento" class="modal"><div class="modal-content"><div class="modal-header"><h2>?? Pagamento</h2><span class="fechar" onclick="fecharModal('modalPagamento')">&times;</span></div><div id="pagamentoConteudo"></div></div></div>
+  <script src="js/produtos.js"></script>
+  <script src="js/carrinho.js"></script>
+  <script src="js/pagamento.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
