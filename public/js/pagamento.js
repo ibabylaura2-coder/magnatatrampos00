@@ -3,7 +3,7 @@ async function gerarPix() {
 
     const totalCentavos = Math.round(calcularTotal() * 100);
     
-    // Pega APENAS o nome que o cliente digitou
+    // Pega apenas o nome
     const cliente = {
         name: document.getElementById('clienteNome').value
     };
@@ -21,7 +21,12 @@ async function gerarPix() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Erro ao gerar PIX');
 
-        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.pix_qr_code)}`;
+        // O QR Code agora usa o link oficial que a GladePay mandou (se disponível), 
+        // senão desenha usando o texto real.
+        let qrCodeUrl = data.qrCodeUrl;
+        if (!qrCodeUrl) {
+           qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.pix_qr_code)}`;
+        }
 
         document.getElementById('pagamentoConteudo').innerHTML = `
             <div class="qr-code">
@@ -61,7 +66,7 @@ async function verificarPagamento(hash) {
             carrinho = [];
             localStorage.setItem('carrinho', JSON.stringify(carrinho));
             atualizarCarrinhoCount();
-        } else if (status === 'pending' || status === 'waiting_payment') {
+        } else if (status === 'pending') {
             mensagem = '⏳ Pagamento PENDENTE. Aguarde a confirmação.';
         } else if (status === 'expired') {
             mensagem = '⏰ Pagamento EXPIRADO. Gere um novo.';
