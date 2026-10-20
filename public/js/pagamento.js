@@ -3,10 +3,9 @@ async function gerarPix() {
 
     const totalCentavos = Math.round(calcularTotal() * 100);
     
-    // Pega apenas o nome
-    const cliente = {
-        name: document.getElementById('clienteNome').value
-    };
+    // Pega os valores (se estiverem vazios, envia string vazia e o servidor resolve)
+    const nomeDigitado = document.getElementById('clienteNome')?.value || '';
+    const emailDigitado = document.getElementById('clienteEmail')?.value || '';
 
     document.getElementById('pagamentoConteudo').innerHTML = '<div class="loading"></div>';
     abrirModal('modalPagamento');
@@ -15,14 +14,12 @@ async function gerarPix() {
         const response = await fetch('/api/transacao', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: totalCentavos, customer: cliente })
+            body: JSON.stringify({ amount: totalCentavos, name: nomeDigitado, email: emailDigitado })
         });
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Erro ao gerar PIX');
 
-        // O QR Code agora usa o link oficial que a GladePay mandou (se disponível), 
-        // senão desenha usando o texto real.
         let qrCodeUrl = data.qrCodeUrl;
         if (!qrCodeUrl) {
            qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.pix_qr_code)}`;
