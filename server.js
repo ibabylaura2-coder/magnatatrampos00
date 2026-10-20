@@ -11,7 +11,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 const GLADEPAY_URL = process.env.GATEWAY_BASE_URL || 'https://app.gladepay.com.br/v1';
 const TOKEN = process.env.GATEWAY_API_TOKEN;
 
-// Memória temporária para guardar os pagamentos (enquanto o site está online)
 const pagamentos = {};
 
 // ==========================================
@@ -25,6 +24,9 @@ app.post('/api/transacao', async (req, res) => {
       return res.status(400).json({ error: 'Valor mínimo é R$ 1,00' });
     }
 
+    // Pega o nome do cliente que veio do frontend
+    const nomeCliente = customer && customer.name ? customer.name : '';
+
     const response = await fetch(`${GLADEPAY_URL}/deposito`, {
       method: 'POST',
       headers: {
@@ -34,7 +36,7 @@ app.post('/api/transacao', async (req, res) => {
       body: JSON.stringify({
         amountCents: amount,
         reference: `pedido-${Date.now()}`,
-        // O webhook é configurado pela variável de ambiente
+        customerName: nomeCliente,
         callbackUrl: process.env.WEBHOOK_URL || undefined 
       })
     });
@@ -46,12 +48,12 @@ app.post('/api/transacao', async (req, res) => {
       return res.status(response.status).json({ error: data.message || 'Erro na GladePay' });
     }
 
-    // Salva como pendente na memória
-    pagamentos[data.txId] = { status: 'pending' };
+    // Salva o publicId como chave para consulta
+    pagamentos[data.publicId] = { status: 'pending', txId: data.txId };
 
     res.json({
-      hash: data.txId,
-      pix_qr_code: data.qrcodeText,
+      hash: data.publicId, 
+      pix_qr_code: data.qrCodeText, // NOME CORRETO AGORA
       checkoutUrl: data.checkoutUrl
     });
 
@@ -62,32 +64,32 @@ app.post('/api/transacao', async (req, res) => {
 });
 
 // ==========================================
-// CONSULTAR STATUS (Usado pelo botão verificar)
+// CONSULTAR STATUS
 // ==========================================
 app.get('/api/transacao/:hash', async (req, res) => {
   try {
-    const txId = req.params.hash;
+    const idPublico = req.params.hash;
     
-    // Se já foi pago via webhook, retorna na hora
-    if (pagamentos[txId] && pagamentos[txId].status === 'paid') {
+    if (pagamentos[idPublico] && pagamentos[idPublico].status === 'paid') {
       return res.json({ payment_status: 'paid' });
     }
 
-    // Se não, pergunta pra GladePay
-    const response = await fetch(`${GLADEPAY_URL}/deposito/${txId}`, {
+    // A GladePay permite consultar tanto pelo txId quanto pelo publicId
+    const response = await fetch(`${GLADEPAY_URL}/deposito/status?txId=${idPublico}`, {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${TOKEN}`, 'Accept': 'application/json' }
     });
 
     const data = await response.json();
+    
     let statusTraduzido = 'pending';
-    if (['PAID', 'COMPLETED', 'APPROVED'].includes(data.status)) statusTraduzido = 'paid';
-    if (['EXPIRED', 'CANCELED'].includes(data.status)) statusTraduzido = 'expired';
+    // O status de sucesso na GladePay é SETTLED
+    if (data.status === 'SETTLED') statusTraduzido = 'paid';
+    if (data.status === 'EXPIRED' || data.status === 'CANCELED') statusTraduzido = 'expired';
 
-    // Atualiza a memória se descobriu que foi pago
-    if (statusTraduzido === 'paid') pagamentos[txId] = { status: 'paid' };
+    if (statusTraduzido === 'paid') pagamentos[idPublico] = { status: 'paid' };
 
-    res.json({ payment_status: statusTraduzido, original: data });
+    res.json({ payment_status: statusTraduzido });
 
   } catch (error) {
     res.status(500).json({ error: 'Erro ao verificar status.' });
@@ -95,23 +97,21 @@ app.get('/api/transacao/:hash', async (req, res) => {
 });
 
 // ==========================================
-// WEBHOOK (Recebe o aviso automático da GladePay)
+// WEBHOOK (Aviso automático)
 // ==========================================
 app.post('/webhook', (req, res) => {
   try {
     const data = req.body;
     console.log('[WEBHOOK RECEBIDO]', data);
 
-    // A GladePay avisa o ID da transação e o novo status
-    const txId = data.txId || data.id;
-    const status = data.status;
-
-    if (txId && ['PAID', 'COMPLETED', 'APPROVED'].includes(status)) {
-      pagamentos[txId] = { status: 'paid' };
-      console.log(`✅ PIX ${txId} confirmado via webhook!`);
+    // O ID enviado no webhook é o publicId
+    const publicId = data.id;
+    
+    if (publicId && data.status === 'SETTLED') {
+      pagamentos[publicId] = { status: 'paid' };
+      console.log(`✅ PIX ${publicId} confirmado via webhook!`);
     }
 
-    // Sempre responda 200 OK para a GladePay não ficar reenviando
     res.status(200).send('OK');
   } catch (error) {
     console.error('Erro no webhook:', error);
