@@ -1,0 +1,43 @@
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+body { background: #0f0f10; color: #e0e0e0; }
+.header { background: #1a1b1e; padding: 20px; text-align: center; border-bottom: 2px solid #2b2d31; position: fixed; width: 100%; top: 0; z-index: 1000; }
+.header h1 { color: #00ff88; font-size: 2em; margin-bottom: 5px; }
+.header p { color: #a0a0a0; }
+.container { max-width: 1400px; margin: 150px auto 50px; padding: 0 20px; }
+.categorias { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
+.categoria-btn { background: #1a1b1e; border: 1px solid #2b2d31; color: #e0e0e0; padding: 12px 25px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+.categoria-btn:hover { background: #2b2d31; border-color: #00ff88; }
+.categoria-btn.ativo { background: #00ff88; color: #1a1b1e; border-color: #00ff88; }
+.produtos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; }
+.produto-card { background: #1a1b1e; border: 1px solid #2b2d31; border-radius: 12px; padding: 20px; transition: 0.3s; }
+.produto-card:hover { transform: translateY(-5px); border-color: #00ff88; }
+.produto-titulo { color: #00ff88; font-size: 1.2em; margin-bottom: 15px; border-bottom: 1px solid #2b2d31; padding-bottom: 10px; }
+.produto-descricao { color: #a0a0a0; font-size: 0.9em; margin-bottom: 20px; }
+.produto-preco { font-size: 1.5em; color: #fff; margin-bottom: 10px; }
+.produto-preco span { color: #00ff88; font-weight: bold; }
+.produto-estoque { color: #a0a0a0; font-size: 0.9em; margin-bottom: 20px; }
+.btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; transition: 0.3s; }
+.btn-comprar { background: #00ff88; color: #1a1b1e; }
+.btn-comprar:hover { background: #00cc66; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+.modal-content { background: #1a1b1e; border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #2b2d31; padding-bottom: 10px; }
+.modal-header h2 { color: #00ff88; }
+.fechar { color: #a0a0a0; font-size: 28px; cursor: pointer; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; }
+.form-group input { width: 100%; padding: 12px; background: #2b2d31; border: 1px solid #404040; border-radius: 6px; color: #fff; }
+.carrinho-flutuante { position: fixed; bottom: 30px; right: 30px; background: #00ff88; color: #1a1b1e; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; cursor: pointer; z-index: 1000; }
+.carrinho-count { position: absolute; top: -5px; right: -5px; background: #ff4444; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; }
+.carrinho-item { background: #2b2d31; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+.remover-item { color: #ff4444; cursor: pointer; float: right; }
+.total-carrinho { font-size: 1.3em; margin: 20px 0; border-top: 1px solid #2b2d31; padding-top: 20px; }
+.qr-code { text-align: center; margin: 20px 0; }
+.qr-code img { max-width: 200px; border-radius: 10px; }
+.pix-code { background: #2b2d31; padding: 15px; border-radius: 8px; text-align: center; }
+.pix-code .codigo { font-family: monospace; color: #00ff88; word-break: break-all; margin: 10px 0; }
+.copiar-btn { background: #00ff88; color: #1a1b1e; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+.mensagem { padding: 15px; border-radius: 8px; margin: 10px 0; }
+.mensagem.sucesso { background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; }
+.mensagem.erro { background: rgba(255,68,68,0.1); border: 1px solid #ff4444; color: #ff4444; }
+@media (max-width: 768px) { .produtos-grid { grid-template-columns: 1fr; } }
