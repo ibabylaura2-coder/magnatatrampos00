@@ -52,8 +52,12 @@ function mostrarCarrinho() {
         <div class="total-carrinho"><strong>Total: R$ ${calcularTotal().toFixed(2)}</strong></div>
         <form id="formCliente">
             <div class="form-group">
-                <label>Seu Nome:</label>
-                <input type="text" id="clienteNome" placeholder="Digite seu nome" required>
+                <label>Seu Nome (Opcional):</label>
+                <input type="text" id="clienteNome" placeholder="Digite seu nome">
+            </div>
+            <div class="form-group">
+                <label>Seu E-mail (Opcional):</label>
+                <input type="email" id="clienteEmail" placeholder="seu@email.com">
             </div>
         </form>
         <button class="btn btn-comprar" onclick="gerarPix()">💰 Finalizar Compra</button>
